@@ -1,5 +1,6 @@
 import os
 from fastapi import FastAPI
+from fastapi.responses import RedirectResponse
 from supabase import create_client, Client
 from dotenv import load_dotenv
 
@@ -55,4 +56,4 @@ def add_data(name: str, age: int):
 # ルートエンドポイント
 @app.get("/")
 def read_root():
-    return {"message": "StructureBox"}
+    return RedirectResponse("./docs")
