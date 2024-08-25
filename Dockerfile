@@ -6,8 +6,8 @@ WORKDIR /app
 
 # 必要なファイルをコピー
 COPY requirements.txt ./
-COPY ./app /app
-COPY ./app/start.sh /app/start.sh
+COPY ./app ./
+COPY ./app/start.sh ./
 
 
 # 依存関係のインストール
@@ -26,4 +26,4 @@ RUN chmod +x start.sh
 USER myuser
 
 # アプリケーションの起動コマンド
-CMD ["./app/start.sh"]
+CMD ["./start.sh"]
