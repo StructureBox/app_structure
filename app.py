@@ -55,4 +55,4 @@ def add_data(name: str, age: int):
 # ルートエンドポイント
 @app.get("/")
 def read_root():
-    return {"message": "Hello World"}
+    return {"message": "StructureBox"}
