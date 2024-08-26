@@ -43,16 +43,6 @@ def add_data(name: str, age: int):
         return {"error": response.status_text}
 
 
-# # データをSupabaseのusersテーブルに挿入するエンドポイント
-# @app.post("/users")
-# def add_user(user: User):
-#     response = supabase.table("users").insert({"name": user.name, "age": user.age}).execute()
-#     if response.status_code == 201:
-#         return {"message": "User added successfully"}
-#     else:
-#         raise HTTPException(status_code=response.status_code, detail=response.status_text)
-
-
 # ルートエンドポイント
 @app.get("/")
 def read_root():
