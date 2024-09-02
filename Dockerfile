@@ -11,6 +11,7 @@ COPY ./app/start.sh ./
 
 
 # 依存関係のインストール
+RUN pip install --upgrade pip
 RUN pip install --no-cache-dir --upgrade -r requirements.txt
 
 # 非rootユーザーを作成
