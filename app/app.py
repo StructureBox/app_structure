@@ -1,29 +1,25 @@
 import io
 import os
-
-from datetime import datetime, timedelta
+import logging
+from datetime import datetime
 from fastapi import FastAPI, HTTPException, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
-
-# from typing import Optional
-from supabase import create_client, Client
 from dotenv import load_dotenv
 
-from excel import edit_excel_template, convert_excel_to_pdf
+# Excel関連の関数をインポート
+from excel import get_excel_template, edit_excel_template
 from steel import Steel
 
+# Supabase操作をまとめた関数をインポート
+from supabase_utils import upload_to_supabase, generate_download_link
 
 # 環境変数をロード
 load_dotenv()
 
-# Supabaseの設定
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY")
-
-# Supabaseクライアントの作成
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+# ロギングの設定
+logging.basicConfig(level=logging.DEBUG)
 
 # FastAPIアプリの作成
 app = FastAPI()
@@ -33,45 +29,14 @@ origins = os.getenv("ALLOWED_ORIGINS").split(",")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,  # 環境変数またはデフォルト値を使用
+    allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],  # 全てのHTTPメソッドを許可
-    allow_headers=["*"],  # 全てのヘッダーを許可
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
-
-BUCKET_NAME = os.getenv("BUCKET_NAME")
-
-
-def get_excel_template() -> io.BytesIO:
-    """
-    Supabaseからエクセルテンプレートを取得する関数。
-    """
-    response = supabase.storage().from_("excel-templates").download("template.xlsx")
-    if response.status_code != 200:
-        raise HTTPException(status_code=404, detail="Template not found")
-    return io.BytesIO(response.body)
-
-
-def upload_to_supabase(file_name: str, file_data: io.BytesIO) -> None:
-    """
-    Supabaseにファイルをアップロードする関数。
-    """
-    response = supabase.storage().from_("edited-files").upload(file_name, file_data)
-    if response.status_code != 200:
-        raise HTTPException(status_code=500, detail="Failed to upload file")
-
-
-def generate_download_link(file_name: str, expiration_minutes: int = 10) -> str:
-    """
-    Supabase上のファイルに対して有効期限付きのダウンロードリンクを生成する関数。
-    """
-    expiration_time = int((timedelta(minutes=expiration_minutes)).total_seconds())
-    return supabase.storage().from_("edited-files").create_signed_url(file_name, expiration_time)
-
 
 class SteelGetSectionInput(BaseModel):
     size: str
-
 
 @app.post("/edit_excel/")
 async def process_excel(
@@ -97,6 +62,8 @@ async def process_excel(
     program_name: str = Form(...),
     program_version: str = Form(...),
 ):
+    logging.debug("Starting process_excel endpoint")
+    
     # 1. エクセルテンプレートの取得
     template = get_excel_template()
 
@@ -126,29 +93,24 @@ async def process_excel(
         program_version=program_version,
     )
 
-    # 3. PDFに変換
-    pdf_data = convert_excel_to_pdf(edited_excel)
-
-    # 4. Supabaseにアップロード
+    # 3. Supabaseにアップロード
     timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
     excel_file_name = f"edited_{timestamp}.xlsx"
-    pdf_file_name = f"edited_{timestamp}.pdf"
-
     upload_to_supabase(excel_file_name, edited_excel)
-    upload_to_supabase(pdf_file_name, pdf_data)
 
-    # 5. ダウンロードリンクの生成
+    # 4. ダウンロードリンクの生成
     excel_download_url = generate_download_link(excel_file_name)
-    pdf_download_url = generate_download_link(pdf_file_name)
 
-    return {"excel_download_url": excel_download_url, "pdf_download_url": pdf_download_url}
-
+    logging.debug("Completed process_excel endpoint")
+    return {"excel_download_url": excel_download_url}
 
 @app.post("/get_section/")
 def get_section(input_data: SteelGetSectionInput):
+    logging.debug(f"Getting section data for size: {input_data.size}")
     steel = Steel()
     shape, section, values = steel.get_section(input_data.size)
     if values is None:
+        logging.error(f"No section data found for size: {input_data.size}")
         raise HTTPException(status_code=404, detail="指定された部材寸法に一致する断面が見つかりません")
     return {
         "A": values[0],
@@ -161,8 +123,6 @@ def get_section(input_data: SteelGetSectionInput):
         "Cy": values[7] if len(values) > 7 else "N/A",  # Cyは一部の形状でのみ利用可能
     }
 
-
-# ルートエンドポイント
 @app.get("/")
 def read_root():
     return RedirectResponse("./docs")
