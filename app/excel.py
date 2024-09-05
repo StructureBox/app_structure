@@ -14,7 +14,7 @@ def get_excel_template(file_name: str) -> io.BytesIO:
     template_path = f"excel_templates/{file_name}.xlsx"
     if not os.path.exists(template_path):
         raise HTTPException(status_code=404, detail="Template not found")
-    
+
     with open(template_path, "rb") as f:
         return io.BytesIO(f.read())
 
@@ -80,7 +80,7 @@ def edit_excel_safety_certificate(template: io.BytesIO, **data) -> io.BytesIO:
 
 if __name__ == "__main__":
     # ロギングの設定
-    logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+    logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s")
 
     logging.debug("Starting the script.")
     try:

@@ -1,15 +1,14 @@
-import io
 import os
 import logging
 
 from dotenv import load_dotenv
 from datetime import datetime
-from fastapi import FastAPI, HTTPException, Form, Body
+from fastapi import FastAPI, HTTPException, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 
 # モデルをインポート
-from models.excel_models import template_model_map, template_cell_map, SafetyCertificateInput
+from models.excel_models import template_model_map, SafetyCertificateInput
 from models.steel_input_models import SteelGetSectionInput
 
 # Excel関連の関数をインポート
@@ -46,7 +45,7 @@ async def process_excel(template_name: str, input_data: dict = Body(...)):
     model = template_model_map.get(template_name)
     if not model:
         raise HTTPException(status_code=404, detail=f"Template '{template_name}' not found")
-    
+
     # 入力データのバリデーション
     validated_data = model(**input_data).dict()
 
@@ -66,9 +65,9 @@ async def process_excel(template_name: str, input_data: dict = Body(...)):
 
 
 @app.post("/edit_excel/safety_certificate")
-async def process_excel(model: SafetyCertificateInput):
+async def edit_safety_certificate(model: SafetyCertificateInput):
     logging.debug("Starting process_excel endpoint")
-    
+
     # 1. エクセルテンプレートの取得
     template = get_excel_template("safety_certificate")
 
@@ -128,6 +127,7 @@ def get_section(input_data: SteelGetSectionInput):
         "iy": values[6],
         "Cy": values[7] if len(values) > 7 else "N/A",  # Cyは一部の形状でのみ利用可能
     }
+
 
 @app.get("/")
 def read_root():
