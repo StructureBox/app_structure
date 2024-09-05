@@ -1,15 +1,17 @@
-import os
-from openpyxl import load_workbook
 import io
+import os
 import logging
+
 from fastapi import HTTPException
+from openpyxl import load_workbook
+from models.excel_models import template_cell_map
 
 
-def get_excel_template() -> io.BytesIO:
+def get_excel_template(file_name: str) -> io.BytesIO:
     """
     ローカルファイルからエクセルテンプレートを取得する関数。
     """
-    template_path = "temp/template.xlsx"
+    template_path = f"excel_templates/{file_name}.xlsx"
     if not os.path.exists(template_path):
         raise HTTPException(status_code=404, detail="Template not found")
     
@@ -17,8 +19,33 @@ def get_excel_template() -> io.BytesIO:
         return io.BytesIO(f.read())
 
 
+def edit_excel_template(template: io.BytesIO, template_name: str, data: dict) -> io.BytesIO:
+    """
+    汎用的なExcelテンプレート編集関数。
+    テンプレート名に基づいてセルのマッピングを取得し、受け取ったデータを編集。
+    """
+    wb = load_workbook(template)
+    ws = wb.active
 
-def edit_excel_template(template: io.BytesIO, **data) -> io.BytesIO:
+    # テンプレートに基づいたセルマッピングを取得
+    cell_map = template_cell_map.get(template_name)
+    if not cell_map:
+        raise ValueError(f"Template '{template_name}' not found or not supported")
+
+    # データに基づいてセルに値を入力
+    for field, cell_address in cell_map.items():
+        if field in data:
+            ws[cell_address] = data[field]
+
+    # 編集後のエクセルファイルをバイトストリームに保存
+    edited_excel = io.BytesIO()
+    wb.save(edited_excel)
+    edited_excel.seek(0)
+
+    return edited_excel
+
+
+def edit_excel_safety_certificate(template: io.BytesIO, **data) -> io.BytesIO:
     """
     受け取ったデータに基づいてエクセルテンプレートを編集する関数。
     """

@@ -12,10 +12,17 @@ load_dotenv()
 # Supabaseの設定
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
-BUCKET_NAME = "excel-templates"
 
 # Supabaseクライアントの作成
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+
+def generate_supabase_file_url(file_name: str) -> str:
+    """
+    SupabaseのURLとファイル名を使って、ストレージ上のファイルの完全なURLを生成する関数。
+    """
+    return f"{SUPABASE_URL}/storage/v1/object/public/excel_templates/{file_name}.xlsx"
+
 
 def upload_to_supabase(file_name: str, file_data: io.BytesIO) -> None:
     """
@@ -28,6 +35,7 @@ def upload_to_supabase(file_name: str, file_data: io.BytesIO) -> None:
     if response is None or hasattr(response, 'error') and response.error:
         logging.error(f"Failed to upload {file_name} to Supabase storage")
         raise HTTPException(status_code=500, detail="Failed to upload file")
+
 
 def generate_download_link(file_name: str, expiration_minutes: int = 10) -> str:
     """
@@ -50,6 +58,7 @@ def generate_download_link(file_name: str, expiration_minutes: int = 10) -> str:
     
     return signed_url
 
+
 def download_from_supabase(file_name: str) -> io.BytesIO:
     """
     Supabaseからファイルをダウンロードする関数。
@@ -63,30 +72,45 @@ def download_from_supabase(file_name: str) -> io.BytesIO:
     # 返ってくるresponseはバイト型のため、直接BytesIOに渡す
     return io.BytesIO(response)
 
+
+def download_excel_from_url(url: str) -> io.BytesIO:
+    """
+    URLからエクセルファイルをダウンロードし、BytesIOとして返す関数。
+    """
+    logging.debug(f"Downloading Excel file from URL: {url}")
+    response = requests.get(url)
+
+    if response.status_code != 200:
+        logging.error(f"Failed to download Excel file from URL: {url}")
+        raise HTTPException(status_code=404, detail="File not found or failed to download")
+
+    return io.BytesIO(response.content)
+
+
 if __name__ == "__main__":
     # ロギングの設定
     logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
     try:
         # 1. テスト用のファイルパスを設定
-        test_file_path = "temp/template.xlsx"
+        test_file_path = "excel_templates/safety_certificate.xlsx"
         with open(test_file_path, "rb") as file:
             test_data = io.BytesIO(file.read())  # ファイルの内容をBytesIOに読み込み
 
         # 2. Supabaseにファイルをアップロード
         logging.debug("Testing file upload to Supabase")
-        upload_to_supabase("template.xlsx", test_data)
+        upload_to_supabase("safety_certificate.xlsx", test_data)
         logging.info(f"File {test_file_path} uploaded successfully")
 
         # 3. アップロードされたファイルのダウンロードリンクを生成
         logging.debug("Generating download link for the uploaded file")
-        download_link = generate_download_link("template.xlsx", expiration_minutes=10)
+        download_link = generate_download_link("safety_certificate.xlsx", expiration_minutes=10)
         logging.info(f"Download link generated: {download_link}")
 
         # 4. ファイルをSupabaseからダウンロード
         logging.debug("Testing file download from Supabase")
-        downloaded_file = download_from_supabase("template.xlsx")
-        logging.info(f"File template.xlsx downloaded successfully")
+        downloaded_file = download_from_supabase("safety_certificate.xlsx")
+        logging.info(f"File safety_certificate.xlsx downloaded successfully")
 
     except HTTPException as e:
         logging.error(f"HTTPException occurred: {e.detail}")

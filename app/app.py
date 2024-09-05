@@ -1,15 +1,19 @@
 import io
 import os
 import logging
+
+from dotenv import load_dotenv
 from datetime import datetime
-from fastapi import FastAPI, HTTPException, Form
+from fastapi import FastAPI, HTTPException, Form, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
-from pydantic import BaseModel
-from dotenv import load_dotenv
+
+# モデルをインポート
+from models.excel_models import template_model_map, template_cell_map, SafetyCertificateInput
+from models.steel_input_models import SteelGetSectionInput
 
 # Excel関連の関数をインポート
-from excel import get_excel_template, edit_excel_template
+from excel import get_excel_template, edit_excel_safety_certificate, edit_excel_template
 from steel import Steel
 
 # Supabase操作をまとめた関数をインポート
@@ -35,67 +39,68 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-class SteelGetSectionInput(BaseModel):
-    size: str
 
-@app.post("/edit_excel/")
-async def process_excel(
-    architect_number: str = Form(...),
-    architect_name: str = Form(...),
-    office_number: str = Form(...),
-    address: str = Form(...),
-    phone_number: str = Form(...),
-    client_name: str = Form(...),
-    building_location: str = Form(...),
-    building_name: str = Form(...),
-    building_usage: str = Form(...),
-    building_area: float = Form(...),
-    total_area: float = Form(...),
-    max_height: float = Form(...),
-    eaves_height: float = Form(...),
-    above_ground_floors: int = Form(...),
-    underground_floors: int = Form(...),
-    structure_type: str = Form(...),
-    building_category: str = Form(...),
-    calculation_type: str = Form(...),
-    calculation_method: str = Form(...),
-    program_name: str = Form(...),
-    program_version: str = Form(...),
-):
+@app.post("/edit_excel/{template_name}")
+async def process_excel(template_name: str, input_data: dict = Body(...)):
+    # 入力モデルとセルマッピングを動的に選択
+    model = template_model_map.get(template_name)
+    if not model:
+        raise HTTPException(status_code=404, detail=f"Template '{template_name}' not found")
+    
+    # 入力データのバリデーション
+    validated_data = model(**input_data).dict()
+
+    # Excelテンプレートを取得
+    template = get_excel_template(template_name)
+
+    # セル位置を利用してExcelを編集
+    edited_excel = edit_excel_template(template, template_name, validated_data)
+
+    # Supabaseにアップロード
+    excel_file_name = f"{template_name}_{datetime.now().strftime('%Y%m%d%H%M%S')}.xlsx"
+    upload_to_supabase(excel_file_name, edited_excel)
+
+    # ダウンロードリンクを生成
+    excel_download_url = generate_download_link(excel_file_name)
+    return {"excel_download_url": excel_download_url}
+
+
+@app.post("/edit_excel/safety_certificate")
+async def process_excel(model: SafetyCertificateInput):
     logging.debug("Starting process_excel endpoint")
     
     # 1. エクセルテンプレートの取得
-    template = get_excel_template()
+    template = get_excel_template("safety_certificate")
 
     # 2. テンプレートの編集
-    edited_excel = edit_excel_template(
+    edited_excel = edit_excel_safety_certificate(
         template,
-        architect_number=architect_number,
-        architect_name=architect_name,
-        office_number=office_number,
-        address=address,
-        phone_number=phone_number,
-        client_name=client_name,
-        building_location=building_location,
-        building_name=building_name,
-        building_usage=building_usage,
-        building_area=building_area,
-        total_area=total_area,
-        max_height=max_height,
-        eaves_height=eaves_height,
-        above_ground_floors=above_ground_floors,
-        underground_floors=underground_floors,
-        structure_type=structure_type,
-        building_category=building_category,
-        calculation_type=calculation_type,
-        calculation_method=calculation_method,
-        program_name=program_name,
-        program_version=program_version,
+        architect_number=model.architect_number,
+        architect_name=model.architect_name,
+        office_number=model.office_number,
+        address=model.address,
+        phone_number=model.phone_number,
+        client_name=model.client_name,
+        building_location=model.building_location,
+        building_name=model.building_name,
+        building_usage=model.building_usage,
+        building_area=model.building_area,
+        total_area=model.total_area,
+        max_height=model.max_height,
+        eaves_height=model.eaves_height,
+        above_ground_floors=model.above_ground_floors,
+        underground_floors=model.underground_floors,
+        structure_type=model.structure_type,
+        building_category=model.building_category,
+        calculation_type=model.calculation_type,
+        calculation_method=model.calculation_method,
+        program_name=model.program_name,
+        program_version=model.program_version,
     )
 
     # 3. Supabaseにアップロード
     timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-    excel_file_name = f"edited_{timestamp}.xlsx"
+    excel_file_name = f"safety_certificate_{timestamp}.xlsx"
     upload_to_supabase(excel_file_name, edited_excel)
 
     # 4. ダウンロードリンクの生成
@@ -103,6 +108,7 @@ async def process_excel(
 
     logging.debug("Completed process_excel endpoint")
     return {"excel_download_url": excel_download_url}
+
 
 @app.post("/get_section/")
 def get_section(input_data: SteelGetSectionInput):
