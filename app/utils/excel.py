@@ -48,39 +48,6 @@ def edit_excel_template(template: io.BytesIO, template_name: str, data: dict) ->
     return edited_excel
 
 
-def edit_excel_safety_certificate(template: io.BytesIO, **data) -> io.BytesIO:
-    """
-    受け取ったデータに基づいてエクセルテンプレートを編集する関数。
-    """
-    wb = load_workbook(template)
-    ws = wb.active
-
-    # データの編集（セルのアドレスは仮定です。実際のテンプレートに合わせて修正してください）
-    ws["B47"] = data["architect_number"]
-    ws["B48"] = data["architect_name"]
-    ws["B49"] = data["office_number"]
-    ws["B50"] = data["address"]
-    ws["B51"] = data["phone_number"]
-    ws["B52"] = data["client_name"]
-    ws["B53"] = data["building_location"]
-    ws["B54"] = data["building_name"]
-    ws["B55"] = data["building_usage"]
-    ws["B56"] = data["building_area"]
-    ws["B57"] = data["total_area"]
-    ws["B58"] = data["max_height"]
-    ws["B59"] = data["eaves_height"]
-    ws["B60"] = data["above_ground_floors"]
-    ws["B61"] = data["underground_floors"]
-    ws["B62"] = data["structure_type"]
-
-    # 編集後のエクセルファイルをバイトストリームに保存
-    edited_excel = io.BytesIO()
-    wb.save(edited_excel)
-    edited_excel.seek(0)
-
-    return edited_excel
-
-
 if __name__ == "__main__":
     # ロギングの設定
     logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s")

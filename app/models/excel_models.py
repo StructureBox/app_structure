@@ -1,33 +1,33 @@
-from pydantic import BaseModel
-from typing import Dict, Type
+from pydantic import BaseModel, Field
+from typing import Dict, Type, Optional
 
 
 # 各テンプレートに対応する入力モデル
 class SafetyCertificateInput(BaseModel):
-    architect_number: str
-    architect_name: str
-    office_number: str
-    address: str
-    phone_number: str
-    client_name: str
-    building_location: str
-    building_name: str
-    building_usage: str
-    building_area: float
-    total_area: float
-    max_height: float
-    eaves_height: float
-    above_ground_floors: int
-    underground_floors: int
-    structure_type: str
+    architect_number: Optional[str] = Field("111111")
+    architect_name: Optional[str] = Field("string")
+    office_number: Optional[str] = Field("string")
+    address: Optional[str] = Field("string")
+    phone_number: Optional[str] = Field("string")
+    client_name: Optional[str] = Field("string")
+    building_location: Optional[str] = Field("string")
+    building_name: Optional[str] = Field("string")
+    building_usage: Optional[str] = Field("string")
+    building_area: Optional[float] = Field(1000.00)
+    total_area: Optional[float] = Field(1000.00)
+    max_height: Optional[float] = Field(5.000)
+    eaves_height: Optional[float] = Field(5.000)
+    above_ground_floors: Optional[int] = Field(3)
+    underground_floors: Optional[int] = Field(1)
+    structure_type: Optional[str] = Field("string")
 
 
 class OtherTemplateInput(BaseModel):
-    project_name: str
-    project_leader: str
-    start_date: str
-    end_date: str
-    budget: float
+    project_name: Optional[str] = Field("string")
+    project_leader: Optional[str] = Field("string")
+    start_date: Optional[str] = Field("string")
+    end_date: Optional[str] = Field("string")
+    budget: Optional[float] = Field(1000.00)
 
 
 # 各テンプレートの入力モデルとセルマッピングを辞書で管理
@@ -61,35 +61,5 @@ template_cell_map = {
         "start_date": "A3",
         "end_date": "A4",
         "budget": "A5",
-    },
-}
-
-
-# 各テンプレートの例を定義
-template_example_map = {
-    "safety_certificate": {
-        "architect_number": "123456789",
-        "architect_name": "John Doe",
-        "office_number": "987654321",
-        "address": "123 Architecture St",
-        "phone_number": "555-1234",
-        "client_name": "Jane Smith",
-        "building_location": "456 Building Ave",
-        "building_name": "Sky Tower",
-        "building_usage": "Residential",
-        "building_area": 350.5,
-        "total_area": 500.0,
-        "max_height": 120.0,
-        "eaves_height": 115.0,
-        "above_ground_floors": 10,
-        "underground_floors": 2,
-        "structure_type": "Steel",
-    },
-    "other_template": {
-        "project_name": "New Development",
-        "project_leader": "Alice Johnson",
-        "start_date": "2023-01-01",
-        "end_date": "2024-01-01",
-        "budget": 1000000.0,
     },
 }

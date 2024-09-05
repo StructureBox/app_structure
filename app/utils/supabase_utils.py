@@ -127,6 +127,23 @@ def download_excel_from_url(url: str) -> io.BytesIO:
     return io.BytesIO(response.content)
 
 
+def delete_from_supabase(file_name: str) -> str:
+    """
+    Supabase上のファイルを削除する関数。
+    """
+    file_name = ensure_xlsx_extension(file_name)
+    try:
+        response = supabase.storage.from_("edited-files").remove([file_name])
+        # `response` がリストのため、エラーチェックを修正
+        if isinstance(response, list) and response and "error" in response[0]:
+            raise HTTPException(status_code=500, detail=f"Failed to delete file: {file_name}")
+        logging.info(f"File {file_name} deleted successfully from Supabase.")
+        return f"File {file_name} deleted successfully from Supabase."
+    except Exception as e:
+        logging.error(f"Error deleting file from Supabase: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to delete file: {str(e)}")
+
+
 # テスト用の処理
 if __name__ == "__main__":
     # ロギングの設定
@@ -149,6 +166,18 @@ if __name__ == "__main__":
             logging.info(f"File {file_name} downloaded successfully and has data.")
         else:
             logging.error(f"File {file_name} downloaded but is empty.")
+
+        # 4. テストのためにファイルをアップロード
+        logging.debug(f"Uploading file {file_name} to Supabase for deletion test.")
+        test_file_data = io.BytesIO(downloaded_file.getvalue())  # ダウンロードしたファイルを再アップロード
+        upload_to_supabase(file_name, test_file_data)
+
+        logging.info(f"File {file_name} uploaded to Supabase successfully.")
+
+        # 5. アップロードされたファイルを削除
+        logging.debug(f"Deleting file {file_name} from Supabase.")
+        delete_message = delete_from_supabase(file_name)
+        logging.info(delete_message)
 
     except HTTPException as e:
         logging.error(f"HTTPException occurred: {e.detail}")

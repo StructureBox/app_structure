@@ -6,17 +6,23 @@ from datetime import datetime
 from fastapi import FastAPI, HTTPException, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
+from openpyxl import load_workbook
 
 # モデルをインポート
-from models.excel_models import template_model_map, SafetyCertificateInput, template_example_map
+from models.excel_models import (
+    template_model_map,
+    template_cell_map,
+)
 from models.steel_input_models import SteelGetSectionInput
 
 # Excel関連の関数をインポート
-from utils.excel import get_excel_template, edit_excel_safety_certificate, edit_excel_template
+from utils.excel import get_excel_template, edit_excel_template
+
+# 構造計算関連の関数をインポート
 from utils.steel import Steel
 
 # Supabase操作をまとめた関数をインポート
-from utils.supabase_utils import upload_to_supabase, generate_download_link
+from utils.supabase_utils import upload_to_supabase, generate_download_link, delete_from_supabase
 
 # 環境変数をロード
 load_dotenv()
@@ -64,60 +70,81 @@ async def process_excel(template_name: str, input_data: dict = Body(...)):
     return {"excel_download_url": excel_download_url}
 
 
-@app.post("/edit_excel/{template_name}/with_example")
-async def process_excel_with_example(template_name: str):
-    # テンプレートに基づくexampleを取得
-    example_data = template_example_map.get(template_name)
-    if not example_data:
-        raise HTTPException(status_code=404, detail=f"Example for template '{template_name}' not found")
+@app.post("/edit_excel/{template_name}/test")
+async def process_excel_test(template_name: str, input_data: dict = Body(...)):
+    """
+    テスト用エンドポイント。Supabaseにアップロードし、ダウンロードリンク取得後、ファイルを削除。
+    """
+    # 入力モデルとセルマッピングを動的に選択
+    model = template_model_map.get(template_name)
+    if not model:
+        raise HTTPException(status_code=404, detail=f"Template '{template_name}' not found")
 
-    # example_dataを含むエンドポイントの定義
-    return {"template_name": template_name, "example": example_data}
+    # 入力データのバリデーション
+    validated_data = model(**input_data).dict()
 
+    # Excelテンプレートを取得
+    template = get_excel_template(template_name)
 
-@app.post("/edit_excel/safety_certificate")
-async def edit_safety_certificate(model: SafetyCertificateInput):
-    logging.debug("Starting process_excel endpoint")
+    # セル位置を利用してExcelを編集
+    edited_excel = edit_excel_template(template, template_name, validated_data)
 
-    # 1. エクセルテンプレートの取得
-    template = get_excel_template("safety_certificate")
+    # Supabaseへのアップロードとダウンロードリンクの生成
+    excel_file_name = f"{template_name}_{datetime.now().strftime('%Y%m%d%H%M%S')}.xlsx"
+    try:
+        # Supabaseにアップロード
+        upload_to_supabase(excel_file_name, edited_excel)
+        upload_message = f"File {excel_file_name} uploaded to Supabase successfully."
 
-    # 2. テンプレートの編集
-    edited_excel = edit_excel_safety_certificate(
-        template,
-        architect_number=model.architect_number,
-        architect_name=model.architect_name,
-        office_number=model.office_number,
-        address=model.address,
-        phone_number=model.phone_number,
-        client_name=model.client_name,
-        building_location=model.building_location,
-        building_name=model.building_name,
-        building_usage=model.building_usage,
-        building_area=model.building_area,
-        total_area=model.total_area,
-        max_height=model.max_height,
-        eaves_height=model.eaves_height,
-        above_ground_floors=model.above_ground_floors,
-        underground_floors=model.underground_floors,
-        structure_type=model.structure_type,
-        building_category=model.building_category,
-        calculation_type=model.calculation_type,
-        calculation_method=model.calculation_method,
-        program_name=model.program_name,
-        program_version=model.program_version,
-    )
+        # ダウンロードリンクを生成
+        excel_download_url = generate_download_link(excel_file_name)
+        download_link_message = f"Download link generated: {excel_download_url}"
 
-    # 3. Supabaseにアップロード
-    timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-    excel_file_name = f"safety_certificate_{timestamp}.xlsx"
-    upload_to_supabase(excel_file_name, edited_excel)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to upload or generate download link: {str(e)}")
 
-    # 4. ダウンロードリンクの生成
-    excel_download_url = generate_download_link(excel_file_name)
+    # 編集されたExcelファイルが実際に編集されているか確認
+    try:
+        # Excelの内容を読み取って確認（確認用の処理）
+        edited_excel.seek(0)
+        workbook = load_workbook(edited_excel)
+        sheet = workbook.active
 
-    logging.debug("Completed process_excel endpoint")
-    return {"excel_download_url": excel_download_url}
+        # models/excel_models.pyで定義されたセルマッピングを取得
+        cell_map = template_cell_map.get(template_name)
+        if not cell_map:
+            raise HTTPException(status_code=500, detail="Template cell map not found")
+
+        # 結果の辞書
+        edited_cells = {}
+        error_cells = {}
+
+        # 各セルの編集結果を確認
+        for field, cell in cell_map.items():
+            try:
+                # セルの内容を確認して返す
+                cell_value = sheet[cell].value
+                edited_cells[cell] = cell_value
+            except Exception as e:
+                # セルの編集に失敗した場合はエラーメッセージを追加
+                error_cells[cell] = str(e)
+
+        # ファイルを削除する処理（確認後にSupabase上のファイルを削除）
+        delete_message = delete_from_supabase(excel_file_name)
+
+        # 確認用のメッセージ
+        return {
+            "message": "Excel edited successfully" if not error_cells else "Excel edited with errors",
+            "validated_data": validated_data,
+            "edited_cells": edited_cells,  # 編集されたセルの内容
+            "error_cells": error_cells,  # 編集に失敗したセルとその原因
+            "upload_message": upload_message,  # アップロード成功メッセージ
+            "download_link_message": download_link_message,  # ダウンロードリンク生成メッセージ
+            "delete_message": delete_message,  # 削除成功メッセージ
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to verify edited Excel: {str(e)}")
 
 
 @app.post("/get_section/")
