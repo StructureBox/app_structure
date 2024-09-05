@@ -11,4 +11,4 @@ if [ "$RELOAD" = "true" ]; then
 fi
 
 # uvicornでアプリケーションを起動
-uvicorn app:app $UVICORN_OPTS --host 0.0.0.0 --port ${PORT:-8000}
+uvicorn main:app $UVICORN_OPTS --host 0.0.0.0 --port ${PORT:-8000}

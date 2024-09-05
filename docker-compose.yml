@@ -2,12 +2,25 @@ services:
   api:
     container_name: "api"
     volumes:
-    - ./app:/app
+      - ./app:/app
     build: .
     ports:
       - 8000:8000
     env_file:
-      - .env  # ここで .env ファイルを指定
+      - .env
     image: app_structure:latest
 
-
+  tests:
+    container_name: "api_tests"
+    build: .
+    volumes:
+      - ./app:/app
+      - ./tests:/tests
+    env_file:
+      - .env
+    depends_on:
+      - api
+    environment:
+      - PYTHONPATH=/app  # appディレクトリをモジュール検索パスに追加
+    command: pytest /tests
+    image: app_structure_tests:latest

@@ -5,7 +5,7 @@ import logging
 
 from fastapi import HTTPException
 from openpyxl import load_workbook
-from utils.supabase_utils import generate_supabase_file_url, download_excel_from_url
+from services.supabase_utils import generate_supabase_file_url, download_excel_from_url
 from models.excel_models import template_cell_map
 
 

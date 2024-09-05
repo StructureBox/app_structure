@@ -1,21 +1,13 @@
 import io
-import os
 import logging
 import requests
-from supabase import create_client, Client
-from fastapi import HTTPException
-from dotenv import load_dotenv
 from datetime import timedelta
-
-# 環境変数の読み込み
-load_dotenv()
-
-# Supabaseの設定
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+from fastapi import HTTPException
+from supabase import create_client, Client
+from config import config  # configからSupabaseの設定をインポート
 
 # Supabaseクライアントの作成
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+supabase: Client = create_client(config.SUPABASE_URL, config.SUPABASE_KEY)
 
 
 def ensure_xlsx_extension(file_name: str) -> str:

@@ -9,7 +9,8 @@ COPY requirements.txt ./
 
 # 依存関係のインストール
 RUN pip install --upgrade pip && \
-    pip install --no-cache-dir --upgrade -r requirements.txt
+    pip install --no-cache-dir --upgrade -r requirements.txt && \
+    pip install pytest
 
 # アプリケーションのソースコードをコピー
 COPY ./app ./
