@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from typing import Dict, Type
 
+
 # 各テンプレートに対応する入力モデル
 class SafetyCertificateInput(BaseModel):
     architect_number: str
@@ -32,7 +33,7 @@ class OtherTemplateInput(BaseModel):
 # 各テンプレートの入力モデルとセルマッピングを辞書で管理
 template_model_map: Dict[str, Type[BaseModel]] = {
     "safety_certificate": SafetyCertificateInput,
-    "other_template": OtherTemplateInput
+    "other_template": OtherTemplateInput,
 }
 
 template_cell_map = {
@@ -52,13 +53,43 @@ template_cell_map = {
         "eaves_height": "B59",
         "above_ground_floors": "B60",
         "underground_floors": "B61",
-        "structure_type": "B62"
+        "structure_type": "B62",
     },
     "other_template": {
         "project_name": "A1",
         "project_leader": "A2",
         "start_date": "A3",
         "end_date": "A4",
-        "budget": "A5"
-    }
+        "budget": "A5",
+    },
+}
+
+
+# 各テンプレートの例を定義
+template_example_map = {
+    "safety_certificate": {
+        "architect_number": "123456789",
+        "architect_name": "John Doe",
+        "office_number": "987654321",
+        "address": "123 Architecture St",
+        "phone_number": "555-1234",
+        "client_name": "Jane Smith",
+        "building_location": "456 Building Ave",
+        "building_name": "Sky Tower",
+        "building_usage": "Residential",
+        "building_area": 350.5,
+        "total_area": 500.0,
+        "max_height": 120.0,
+        "eaves_height": 115.0,
+        "above_ground_floors": 10,
+        "underground_floors": 2,
+        "structure_type": "Steel",
+    },
+    "other_template": {
+        "project_name": "New Development",
+        "project_leader": "Alice Johnson",
+        "start_date": "2023-01-01",
+        "end_date": "2024-01-01",
+        "budget": 1000000.0,
+    },
 }

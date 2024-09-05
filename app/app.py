@@ -8,15 +8,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 
 # モデルをインポート
-from models.excel_models import template_model_map, SafetyCertificateInput
+from models.excel_models import template_model_map, SafetyCertificateInput, template_example_map
 from models.steel_input_models import SteelGetSectionInput
 
 # Excel関連の関数をインポート
-from excel import get_excel_template, edit_excel_safety_certificate, edit_excel_template
-from steel import Steel
+from utils.excel import get_excel_template, edit_excel_safety_certificate, edit_excel_template
+from utils.steel import Steel
 
 # Supabase操作をまとめた関数をインポート
-from supabase_utils import upload_to_supabase, generate_download_link
+from utils.supabase_utils import upload_to_supabase, generate_download_link
 
 # 環境変数をロード
 load_dotenv()
@@ -62,6 +62,17 @@ async def process_excel(template_name: str, input_data: dict = Body(...)):
     # ダウンロードリンクを生成
     excel_download_url = generate_download_link(excel_file_name)
     return {"excel_download_url": excel_download_url}
+
+
+@app.post("/edit_excel/{template_name}/with_example")
+async def process_excel_with_example(template_name: str):
+    # テンプレートに基づくexampleを取得
+    example_data = template_example_map.get(template_name)
+    if not example_data:
+        raise HTTPException(status_code=404, detail=f"Example for template '{template_name}' not found")
+
+    # example_dataを含むエンドポイントの定義
+    return {"template_name": template_name, "example": example_data}
 
 
 @app.post("/edit_excel/safety_certificate")

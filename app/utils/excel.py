@@ -1,22 +1,25 @@
 import io
-import os
+
+# import os
 import logging
 
 from fastapi import HTTPException
 from openpyxl import load_workbook
+from utils.supabase_utils import generate_supabase_file_url, download_excel_from_url
 from models.excel_models import template_cell_map
 
 
 def get_excel_template(file_name: str) -> io.BytesIO:
     """
-    ローカルファイルからエクセルテンプレートを取得する関数。
+    Supabaseからサイン付きURLを使ってExcelテンプレートを取得する関数
     """
-    template_path = f"excel_templates/{file_name}.xlsx"
-    if not os.path.exists(template_path):
-        raise HTTPException(status_code=404, detail="Template not found")
+    logging.debug(f"Requesting signed URL for {file_name} from Supabase.")
 
-    with open(template_path, "rb") as f:
-        return io.BytesIO(f.read())
+    # 有効期限付きのサイン付きURLを取得（10分間有効）
+    signed_url = generate_supabase_file_url(file_name)
+
+    # サイン付きURLを使ってExcelファイルをダウンロード
+    return download_excel_from_url(signed_url)
 
 
 def edit_excel_template(template: io.BytesIO, template_name: str, data: dict) -> io.BytesIO:

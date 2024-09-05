@@ -1,6 +1,7 @@
 import io
 import os
 import logging
+import requests
 from supabase import create_client, Client
 from fastapi import HTTPException
 from dotenv import load_dotenv
@@ -17,22 +18,53 @@ SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 
-def generate_supabase_file_url(file_name: str) -> str:
+def ensure_xlsx_extension(file_name: str) -> str:
     """
-    SupabaseのURLとファイル名を使って、ストレージ上のファイルの完全なURLを生成する関数。
+    ファイル名に拡張子が含まれていない場合、自動的に.xlsxを追加する。
     """
-    return f"{SUPABASE_URL}/storage/v1/object/public/excel_templates/{file_name}.xlsx"
+    if not file_name.endswith(".xlsx"):
+        file_name += ".xlsx"
+    return file_name
+
+
+def generate_supabase_file_url(file_name: str, expiration_minutes: int = 5) -> str:
+    """
+    Supabaseのファイルに対して有効期限付きのサインURLを生成し、セキュリティを強化したダウンロードURLを生成する関数
+    """
+    file_name = ensure_xlsx_extension(file_name)
+    logging.debug(f"Generating signed URL for {file_name}")
+
+    expiration_time = int(timedelta(minutes=expiration_minutes).total_seconds())
+
+    # Supabaseのサイン付きURLを生成
+    try:
+        response = supabase.storage.from_("excel_templates").create_signed_url(file_name, expiration_time)
+    except Exception as e:
+        logging.error(f"Error generating signed URL: {e}")
+        raise HTTPException(status_code=500, detail="Failed to generate signed URL")
+
+    if response is None or (hasattr(response, "error") and response.error):
+        logging.error(f"Failed to generate signed URL for {file_name}. Response: {response}")
+        raise HTTPException(status_code=500, detail="Failed to generate signed URL")
+
+    signed_url = response.get("signedURL")
+    if not signed_url:
+        logging.error(f"No signed URL returned for {file_name}")
+        raise HTTPException(status_code=500, detail="No signed URL generated")
+
+    return signed_url
 
 
 def upload_to_supabase(file_name: str, file_data: io.BytesIO) -> None:
     """
     Supabaseにファイルをアップロードする関数。
     """
+    file_name = ensure_xlsx_extension(file_name)
     logging.debug(f"Uploading {file_name} to Supabase storage")
     response = supabase.storage.from_("edited-files").upload(file_name, file_data.getvalue())
     logging.debug(f"Response from storage upload: {response}")
 
-    if response is None or hasattr(response, 'error') and response.error:
+    if response is None or hasattr(response, "error") and response.error:
         logging.error(f"Failed to upload {file_name} to Supabase storage")
         raise HTTPException(status_code=500, detail="Failed to upload file")
 
@@ -41,21 +73,22 @@ def generate_download_link(file_name: str, expiration_minutes: int = 10) -> str:
     """
     Supabase上のファイルに対して有効期限付きのダウンロードリンクを生成する関数。
     """
+    file_name = ensure_xlsx_extension(file_name)
     logging.debug(f"Generating download link for {file_name}")
     expiration_time = int((timedelta(minutes=expiration_minutes)).total_seconds())
     response = supabase.storage.from_("edited-files").create_signed_url(file_name, expiration_time)
     logging.debug(f"Response from generating signed URL: {response}")
 
-    if response is None or hasattr(response, 'error') and response.error:
+    if response is None or hasattr(response, "error") and response.error:
         logging.error(f"Failed to generate download link for {file_name}")
         raise HTTPException(status_code=500, detail="Failed to generate download link")
 
     # レスポンスから signedURL を取得
-    signed_url = response.get('signedURL')
+    signed_url = response.get("signedURL")
     if not signed_url:
         logging.error(f"No signed URL returned for {file_name}")
         raise HTTPException(status_code=500, detail="No signed URL generated")
-    
+
     return signed_url
 
 
@@ -63,9 +96,15 @@ def download_from_supabase(file_name: str) -> io.BytesIO:
     """
     Supabaseからファイルをダウンロードする関数。
     """
+    file_name = ensure_xlsx_extension(file_name)
     logging.debug(f"Downloading {file_name} from Supabase storage")
-    response = supabase.storage.from_("excel-templates").download(file_name)
-    if response is None or hasattr(response, 'error') and response.error:
+    try:
+        response = supabase.storage.from_("excel_templates").download(file_name)
+    except Exception as e:
+        logging.error(f"Error downloading file: {e}")
+        raise HTTPException(status_code=500, detail="Error downloading file")
+
+    if response is None or hasattr(response, "error") and response.error:
         logging.error(f"Failed to download {file_name} from Supabase storage")
         raise HTTPException(status_code=404, detail="File not found or failed to download")
 
@@ -73,6 +112,7 @@ def download_from_supabase(file_name: str) -> io.BytesIO:
     return io.BytesIO(response)
 
 
+# 公開URLからファイルをダウンロードする関数
 def download_excel_from_url(url: str) -> io.BytesIO:
     """
     URLからエクセルファイルをダウンロードし、BytesIOとして返す関数。
@@ -87,30 +127,28 @@ def download_excel_from_url(url: str) -> io.BytesIO:
     return io.BytesIO(response.content)
 
 
+# テスト用の処理
 if __name__ == "__main__":
     # ロギングの設定
-    logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+    logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s")
 
     try:
-        # 1. テスト用のファイルパスを設定
-        test_file_path = "excel_templates/safety_certificate.xlsx"
-        with open(test_file_path, "rb") as file:
-            test_data = io.BytesIO(file.read())  # ファイルの内容をBytesIOに読み込み
+        logging.debug("Testing generate file URL from Supabase")
 
-        # 2. Supabaseにファイルをアップロード
-        logging.debug("Testing file upload to Supabase")
-        upload_to_supabase("safety_certificate.xlsx", test_data)
-        logging.info(f"File {test_file_path} uploaded successfully")
+        # 1. ファイルのURLを生成
+        file_name = "safety_certificate"  # 拡張子を省略しても自動で追加される
+        file_url = generate_supabase_file_url(file_name)
+        logging.info(f"File URL generated: {file_url}")
 
-        # 3. アップロードされたファイルのダウンロードリンクを生成
-        logging.debug("Generating download link for the uploaded file")
-        download_link = generate_download_link("safety_certificate.xlsx", expiration_minutes=10)
-        logging.info(f"Download link generated: {download_link}")
+        # 2. URLからファイルをダウンロード
+        logging.debug("Downloading file from generated URL")
+        downloaded_file = download_excel_from_url(file_url)
 
-        # 4. ファイルをSupabaseからダウンロード
-        logging.debug("Testing file download from Supabase")
-        downloaded_file = download_from_supabase("safety_certificate.xlsx")
-        logging.info(f"File safety_certificate.xlsx downloaded successfully")
+        # 3. ダウンロード成功の判定
+        if downloaded_file.getbuffer().nbytes > 0:
+            logging.info(f"File {file_name} downloaded successfully and has data.")
+        else:
+            logging.error(f"File {file_name} downloaded but is empty.")
 
     except HTTPException as e:
         logging.error(f"HTTPException occurred: {e.detail}")
