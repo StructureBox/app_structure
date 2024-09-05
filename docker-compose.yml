@@ -8,4 +8,6 @@ services:
       - 8000:8000
     env_file:
       - .env  # ここで .env ファイルを指定
+    image: app_structure:latest
+
 
