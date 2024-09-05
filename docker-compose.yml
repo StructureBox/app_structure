@@ -21,6 +21,6 @@ services:
     depends_on:
       - api
     environment:
-      - PYTHONPATH=/app  # appディレクトリをモジュール検索パスに追加
+      - PYTHONPATH=/app # appディレクトリをモジュール検索パスに追加
     command: pytest /tests
     image: app_structure_tests:latest
