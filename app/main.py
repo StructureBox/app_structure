@@ -9,7 +9,14 @@ from api.excel import router as excel_router
 from api.excel_test import test_router as excel_test_router
 
 
-app = FastAPI()
+app = FastAPI(
+    title=config.APP_TITLE,
+    version=config.APP_VERSION,
+    description=config.APP_DESCRIPTION,
+    openapi_url=config.OPENAPI_URL,
+    docs_url=config.DOCS_URL,
+    redoc_url=config.REDOC_URL,
+    root_path=config.ROOT_PATH)
 
 # CORS設定
 app.add_middleware(
@@ -32,4 +39,4 @@ if config.ENVIRONMENT != "production":
 # ルートはdocsにリダイレクト
 @app.get("/")
 def read_root():
-    return RedirectResponse("./docs")
+    return RedirectResponse(f".{config.DOCS_URL}")
