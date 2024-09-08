@@ -11,7 +11,9 @@ router = APIRouter()
 @router.post("/edit/{template_name}")
 async def process_excel(
     template_name: str,
-    input_data: dict = Body(..., description="テンプレートを編集するために必要なデータを含む辞書形式のリクエストボディ")
+    input_data: dict = Body(
+        ..., description="テンプレートを編集するために必要なデータを含む辞書形式のリクエストボディ"
+    ),
 ):
     """
     指定されたテンプレートを編集し、編集したExcelファイルをアップロードしてダウンロードリンクを返します。
@@ -19,6 +21,8 @@ async def process_excel(
     - `template_name`: 編集するExcelテンプレートの名前
     - `input_data`: テンプレートに埋め込むデータ（建築番号や名前など）
     - ファイルはSupabaseにアップロードされ、そのダウンロードリンクが返されます
+
+    詳しいドキュメントはこちらをご覧ください:  < [APIドキュメント](https://doc.structurebox.tech/products/api/edit_excel_template) >
     """
     # テンプレート名に基づいて入力モデルを取得
     model = template_model_map.get(template_name)
