@@ -23,7 +23,7 @@ app = FastAPI(
 # CORS設定
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=config.ALLOWED_ORIGINS,  # ConfigのALLOWED_ORIGINSを使用
+    allow_origins=["*"],  # config.ALLOWED_ORIGINS  # ConfigのALLOWED_ORIGINSを使用
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
