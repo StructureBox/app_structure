@@ -254,7 +254,7 @@ def get_h_section(
     - `tf`: フランジの厚さ（mm）
 
     例:
-    `/get_section/h?H=300&B=150&tw=6.5&tf=9`
+    `steel/get_section/h?H=300&B=150&tw=6.5&tf=9`
     """
     logging.debug(f"Getting H-section data for size: H-{H}*{B}*{tw}*{tf}")
 
@@ -296,7 +296,7 @@ def get_wc_section(
     - `tf`: フランジの厚さ（mm）
 
     例:
-    `/get_section/wc?H=300&B=100&tw=8&tf=12`
+    `steel/get_section/wc?H=300&B=100&tw=8&tf=12`
     """
     logging.debug(f"Getting WC-section data for size: WC-{H}*{B}*{tw}*{tf}")
 
@@ -338,7 +338,7 @@ def get_lc_section(
     - `t`: 厚さ（mm）
 
     例:
-    `/get_section/lc?H=150&B=75&C=20&t=2.5`
+    `steel/get_section/lc?H=150&B=75&C=20&t=2.5`
     """
     logging.debug(f"Getting LC-section data for size: LC-{H}*{B}*{C}*{t}")
 
@@ -376,7 +376,7 @@ def get_box_section(
     - `t`: 厚さ（mm）
 
     例:
-    `/post_section/box?B=150&t=6`
+    `steel/get_section/box?B=150&t=6`
     """
     logging.debug(f"Getting BOX-section data for size: BOX-{B}*{t}")
 
@@ -413,7 +413,7 @@ def get_pipe_section(
     - `t`: 厚さ（mm）
 
     例:
-    `/post_section/pipe?D=150&t=6`
+    `steel/get_section/pipe?D=150&t=6`
     """
     logging.debug(f"Getting PIPE-section data for size: PIPE-{D}*{t}")
 
@@ -457,7 +457,7 @@ def get_h_section_excel(
         value (str): 出力したい値 ("A", "Ix", "Iy", "Zx", "Zy", "ix", "iy", "Cy")
 
     Example:
-        `/get_section/excel/h/A?H=300&B=150&tw=6.5&tf=9` -> 断面積を返します。
+        `steel/get_section/excel/h/A?H=300&B=150&tw=6.5&tf=9` -> 断面積を返します。
 
     Returns:
         dict: 指定された値の結果を辞書形式で返します。
@@ -474,21 +474,21 @@ def get_h_section_excel(
 
     result = {}
     if value == "A":
-        result["A"] = values[0]
+        return values[0]
     elif value == "Ix":
-        result["Ix"] = values[1]
+        return values[1]
     elif value == "Iy":
-        result["Iy"] = values[2]
+        return values[2]
     elif value == "Zx":
-        result["Zx"] = values[3]
+        return values[3]
     elif value == "Zy":
-        result["Zy"] = values[4]
+        return values[4]
     elif value == "ix":
-        result["ix"] = values[5]
+        return values[5]
     elif value == "iy":
-        result["iy"] = values[6]
+        return values[6]
     elif value == "Cy" and len(values) > 7:
-        result["Cy"] = values[7]
+        return values[7]
     else:
         raise HTTPException(status_code=400, detail="無効な値が指定されました")
 
@@ -531,21 +531,21 @@ def get_wc_section_excel(
 
     result = {}
     if value == "A":
-        result["A"] = values[0]
+        return values[0]
     elif value == "Ix":
-        result["Ix"] = values[1]
+        return values[1]
     elif value == "Iy":
-        result["Iy"] = values[2]
+        return values[2]
     elif value == "Zx":
         result["Zx"] = values[3]
     elif value == "Zy":
-        result["Zy"] = values[4]
+        return values[4]
     elif value == "ix":
-        result["ix"] = values[5]
+        return values[5]
     elif value == "iy":
-        result["iy"] = values[6]
+        return values[6]
     elif value == "Cy" and len(values) > 7:
-        result["Cy"] = values[7]
+        return values[7]
     else:
         raise HTTPException(status_code=400, detail="無効な値が指定されました")
 
@@ -588,21 +588,21 @@ def get_lc_section_excel(
 
     result = {}
     if value == "A":
-        result["A"] = values[0]
+        return values[0]
     elif value == "Ix":
-        result["Ix"] = values[1]
+        return values[1]
     elif value == "Iy":
-        result["Iy"] = values[2]
+        return values[2]
     elif value == "Zx":
         result["Zx"] = values[3]
     elif value == "Zy":
-        result["Zy"] = values[4]
+        return values[4]
     elif value == "ix":
-        result["ix"] = values[5]
+        return values[5]
     elif value == "iy":
-        result["iy"] = values[6]
+        return values[6]
     elif value == "Cy" and len(values) > 7:
-        result["Cy"] = values[7]
+        return values[7]
     else:
         raise HTTPException(status_code=400, detail="無効な値が指定されました")
 
@@ -641,19 +641,19 @@ def get_box_section_excel(
 
     result = {}
     if value == "A":
-        result["A"] = values[0]
+        return values[0]
     elif value == "Ix":
-        result["Ix"] = values[1]
+        return values[1]
     elif value == "Iy":
-        result["Iy"] = values[2]
+        return values[2]
     elif value == "Zx":
         result["Zx"] = values[3]
     elif value == "Zy":
-        result["Zy"] = values[4]
+        return values[4]
     elif value == "ix":
-        result["ix"] = values[5]
+        return values[5]
     elif value == "iy":
-        result["iy"] = values[6]
+        return values[6]
     else:
         raise HTTPException(status_code=400, detail="無効な値が指定されました")
 
@@ -692,19 +692,19 @@ def get_pipe_section_excel(
 
     result = {}
     if value == "A":
-        result["A"] = values[0]
+        return values[0]
     elif value == "Ix":
-        result["Ix"] = values[1]
+        return values[1]
     elif value == "Iy":
-        result["Iy"] = values[2]
+        return values[2]
     elif value == "Zx":
         result["Zx"] = values[3]
     elif value == "Zy":
-        result["Zy"] = values[4]
+        return values[4]
     elif value == "ix":
-        result["ix"] = values[5]
+        return values[5]
     elif value == "iy":
-        result["iy"] = values[6]
+        return values[6]
     else:
         raise HTTPException(status_code=400, detail="無効な値が指定されました")
 
