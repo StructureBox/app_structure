@@ -38,3 +38,6 @@ class Config:
 
 
 config = Config()
+
+if __name__ == "__main__":
+    print("Allowed origins:", config.ALLOWED_ORIGINS)

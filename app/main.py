@@ -1,6 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.httpsredirect import HTTPSRedirectMiddleware
 from fastapi.responses import RedirectResponse
+
+# プロジェクト全体へのCORS設定
+# from fastapi.middleware.cors import CORSMiddleware
+
 from config import config
 
 # ミドルウェアのインポート
@@ -28,9 +32,19 @@ app = FastAPI(
 # HTTPS リダイレクトミドルウェアを追加（本番環境用）
 if config.ENVIRONMENT == "production":
     app.add_middleware(HTTPSRedirectMiddleware)
+    app.add_middleware(CustomCORSMiddleware)
+
+# # プロジェクト全体にCORS設定を行う
+# app.add_middleware(
+#     CORSMiddleware,
+#     allow_origins=config.ALLOWED_ORIGINS,  # 許可されたオリジンを設定
+#     allow_credentials=True,
+#     allow_methods=["*"],  # 許可するHTTPメソッド
+#     allow_headers=["*"],  # 許可するヘッダー
+# )
 
 # カスタムミドルウェアを適用
-app.add_middleware(CustomCORSMiddleware)
+# app.add_middleware(CustomCORSMiddleware)
 app.add_middleware(ErrorHandlingMiddleware)
 app.add_middleware(RateLimitMiddleware)
 
