@@ -1,10 +1,13 @@
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.httpsredirect import HTTPSRedirectMiddleware
 from fastapi.responses import RedirectResponse
 from config import config
 
+# ミドルウェアのインポート
+from middleware import CustomCORSMiddleware, ErrorHandlingMiddleware
+
 # ルーティングモジュールをインポート
+from api.open_source import router as open_source_router
 from api.general import router as general_router
 from api.excel import router as excel_router
 from api.steel import router as steel_router
@@ -26,16 +29,12 @@ app = FastAPI(
 if config.ENVIRONMENT == "production":
     app.add_middleware(HTTPSRedirectMiddleware)
 
-# CORS設定
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # config.ALLOWED_ORIGINS  # ConfigのALLOWED_ORIGINSを使用
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# カスタムミドルウェアを適用
+app.add_middleware(CustomCORSMiddleware)
+app.add_middleware(ErrorHandlingMiddleware)
 
 # ルーターを登録
+app.include_router(open_source_router, prefix="/free", tags=["Free"])
 app.include_router(general_router, prefix="/general", tags=["General"])
 app.include_router(excel_router, prefix="/excel", tags=["Excel"])
 app.include_router(steel_router, prefix="/steel", tags=["Steel"])
