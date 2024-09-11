@@ -66,11 +66,13 @@ class CustomCORSMiddleware(BaseHTTPMiddleware):
         if any(endpoint in request_path for endpoint in cors_endpoints):
             origin = request.headers.get("origin")
             # オリジンが許可されたリストに含まれているか確認
-            if origin in config.ALLOWED_ORIGINS or config.ENVIRONMENT == "development":
+            if origin in config.ALLOWED_ORIGINS:
                 response = await call_next(request)
                 response.headers["Access-Control-Allow-Origin"] = origin
                 response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
                 response.headers["Access-Control-Allow-Headers"] = "Content-Type"
+                response.headers["Access-Control-Allow-Credentials"] = "true"  # 認証情報の送信を許可
+                response.headers["Access-Control-Max-Age"] = "600"  # プリフライトリクエストのキャッシュ期間
                 return response
             else:
                 # 許可されていないオリジンに対してはCORSエラーを返す
