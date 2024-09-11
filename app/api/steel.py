@@ -37,7 +37,7 @@ def post_section(input_data: SteelPostSectionInput):
     steel = Steel()
 
     # 指定されたサイズに基づいて断面データを取得
-    shape, section, values = steel.post_section(input_data.size)
+    shape, section, values = steel.get_section(input_data.size)
 
     # データが見つからなかった場合、エラーメッセージをログに記録して404エラーを発生
     if values is None:
@@ -74,7 +74,7 @@ def post_h_section(input_data: HSectionInput):
     steel = Steel()
 
     # 指定されたサイズに基づいて断面データを取得
-    shape, section, values = steel.post_section(
+    shape, section, values = steel.get_section(
         f"H-{input_data.H}*{input_data.B}*{input_data.tw}*{input_data.tf}"
     )
 
@@ -110,7 +110,7 @@ def post_wc_section(input_data: WCSectionInput):
 
     steel = Steel()
 
-    shape, section, values = steel.post_section(
+    shape, section, values = steel.get_section(
         f"WC-{input_data.H}*{input_data.B}*{input_data.tw}*{input_data.tf}"
     )
 
@@ -147,7 +147,7 @@ def post_lc_section(input_data: LCSectionInput):
 
     steel = Steel()
 
-    shape, section, values = steel.post_section(
+    shape, section, values = steel.get_section(
         f"LC-{input_data.H}*{input_data.B}*{input_data.C}*{input_data.t}"
     )
 
@@ -184,7 +184,7 @@ def post_box_section(input_data: BOXSectionInput):
 
     steel = Steel()
 
-    shape, section, values = steel.post_section(f"BOX-{input_data.B}*{input_data.t}")
+    shape, section, values = steel.get_section(f"BOX-{input_data.B}*{input_data.t}")
 
     if values is None:
         logging.error(f"No BOX-section data found for size: {input_data}")
@@ -218,7 +218,7 @@ def post_pipe_section(input_data: PIPESectionInput):
 
     steel = Steel()
 
-    shape, section, values = steel.post_section(f"PIPE-{input_data.D}*{input_data.t}")
+    shape, section, values = steel.get_section(f"PIPE-{input_data.D}*{input_data.t}")
 
     if values is None:
         logging.error(f"No PIPE-section data found for size: {input_data}")
@@ -260,7 +260,7 @@ def get_h_section(
 
     steel = Steel()
 
-    shape, section, values = steel.post_section(f"H-{H}*{B}*{tw}*{tf}")
+    shape, section, values = steel.get_section(f"H-{H}*{B}*{tw}*{tf}")
 
     if values is None:
         logging.error(f"No H-section data found for size: H-{H}*{B}*{tw}*{tf}")
@@ -302,7 +302,7 @@ def get_wc_section(
 
     steel = Steel()
 
-    shape, section, values = steel.post_section(f"WC-{H}*{B}*{tw}*{tf}")
+    shape, section, values = steel.get_section(f"WC-{H}*{B}*{tw}*{tf}")
 
     if values is None:
         logging.error(f"No WC-section data found for size: WC-{H}*{B}*{tw}*{tf}")
@@ -344,7 +344,7 @@ def get_lc_section(
 
     steel = Steel()
 
-    shape, section, values = steel.post_section(f"LC-{H}*{B}*{C}*{t}")
+    shape, section, values = steel.get_section(f"LC-{H}*{B}*{C}*{t}")
 
     if values is None:
         logging.error(f"No LC-section data found for size: LC-{H}*{B}*{C}*{t}")
@@ -382,7 +382,7 @@ def get_box_section(
 
     steel = Steel()
 
-    shape, section, values = steel.post_section(f"BOX-{B}*{t}")
+    shape, section, values = steel.get_section(f"BOX-{B}*{t}")
 
     if values is None:
         logging.error(f"No BOX-section data found for size: BOX-{B}*{t}")
@@ -419,7 +419,7 @@ def get_pipe_section(
 
     steel = Steel()
 
-    shape, section, values = steel.post_section(f"PIPE-{D}*{t}")
+    shape, section, values = steel.get_section(f"PIPE-{D}*{t}")
 
     if values is None:
         logging.error(f"No PIPE-section data found for size: PIPE-{D}*{t}")
