@@ -4,7 +4,7 @@ from fastapi.responses import RedirectResponse
 from config import config
 
 # ミドルウェアのインポート
-from middleware import CustomCORSMiddleware, ErrorHandlingMiddleware
+from middleware import CustomCORSMiddleware, ErrorHandlingMiddleware, RateLimitMiddleware
 
 # ルーティングモジュールをインポート
 from api.open_source import router as open_source_router
@@ -32,6 +32,7 @@ if config.ENVIRONMENT == "production":
 # カスタムミドルウェアを適用
 app.add_middleware(CustomCORSMiddleware)
 app.add_middleware(ErrorHandlingMiddleware)
+app.add_middleware(RateLimitMiddleware)
 
 # ルーターを登録
 app.include_router(open_source_router, prefix="/free", tags=["Free"])
