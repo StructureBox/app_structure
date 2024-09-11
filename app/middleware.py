@@ -8,14 +8,6 @@ from starlette.status import HTTP_404_NOT_FOUND, HTTP_500_INTERNAL_SERVER_ERROR
 from config import config
 
 
-# CORSを適用するエンドポイントリスト
-cors_endpoints = [
-    "/general",
-    "/excel",
-    "/steel",
-    "/rc",
-]
-
 # クライアントのリクエスト回数とタイムスタンプを保存するための辞書
 request_counts = {}
 RATE_LIMIT = 10  # 許可する最大リクエスト数
@@ -56,17 +48,32 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         return response
 
 
-# CORSミドルウェア
+# CORSを適用するエンドポイントリスト
+cors_endpoints = [
+    "/general",
+    "/excel",
+    "/steel",
+    "/rc",
+]
+
+
 class CustomCORSMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
-        response = await call_next(request)
-        for endpoint in cors_endpoints:
-            if endpoint in request.url.path:
-                response.headers["Access-Control-Allow-Origin"] = config.ALLOWED_ORIGINS
+        # リクエストURLのパスを取得
+        request_path = request.url.path
+
+        # エンドポイントがcors_endpointsリストに含まれているか確認
+        if any(endpoint in request_path for endpoint in cors_endpoints):
+            origin = request.headers.get("origin")
+            # オリジンが許可されたリストに含まれているか確認
+            if origin in config.ALLOWED_ORIGINS:
+                response = await call_next(request)
+                response.headers["Access-Control-Allow-Origin"] = origin
                 response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
                 response.headers["Access-Control-Allow-Headers"] = "Content-Type"
-                break
-        return response
+                return response
+        # CORSが適用されない場合は通常のレスポンスを返す
+        return await call_next(request)
 
 
 # エラーハンドリングミドルウェア
