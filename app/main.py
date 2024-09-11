@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.httpsredirect import HTTPSRedirectMiddleware
 from fastapi.responses import RedirectResponse
 from config import config
 
@@ -20,6 +21,10 @@ app = FastAPI(
     redoc_url=config.REDOC_URL,
     root_path=config.ROOT_PATH,
 )
+
+# HTTPS リダイレクトミドルウェアを追加（本番環境用）
+if config.ENVIRONMENT == "production":
+    app.add_middleware(HTTPSRedirectMiddleware)
 
 # CORS設定
 app.add_middleware(
