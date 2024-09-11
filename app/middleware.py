@@ -69,7 +69,9 @@ class CustomCORSMiddleware(BaseHTTPMiddleware):
             if origin in config.ALLOWED_ORIGINS:
                 response = await call_next(request)
                 response.headers["Access-Control-Allow-Origin"] = origin
-                response.headers["Access-Control-Allow-Methods"] = "GET, HEAD, OPTIONS, PATCH, POST"
+                response.headers["Access-Control-Allow-Methods"] = (
+                    "DELETE, GET, HEAD, OPTIONS, PATCH, POST, PUT"
+                )
                 response.headers["Access-Control-Allow-Headers"] = "Content-Type"
                 response.headers["Access-Control-Allow-Credentials"] = "true"  # 認証情報の送信を許可
                 response.headers["Access-Control-Max-Age"] = "600"  # プリフライトリクエストのキャッシュ期間
