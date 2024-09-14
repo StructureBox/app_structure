@@ -1,33 +1,40 @@
+# app/services/excel.py
+
 import io
-
-# import os
 import logging
-
+from datetime import datetime
 from fastapi import HTTPException
+
 from openpyxl import load_workbook
-from services.supabase_excel_crud import generate_supabase_excel_url, download_excel_from_url
+from services.supabase_utils import (
+    ensure_extension,
+    generate_supabase_url,
+    upload_file_to_supabase,
+    generate_download_link,
+    download_file_from_url,
+)
 from models.excel_models import template_cell_map
 
-
-def get_excel_template(file_name: str) -> io.BytesIO:
+def get_excel_template(template_name: str) -> io.BytesIO:
     """
-    Supabaseからサイン付きURLを使ってExcelテンプレートを取得する関数
+    SupabaseからExcelテンプレートを取得する関数。
     """
-    logging.debug(f"Requesting signed URL for {file_name} from Supabase.")
+    logging.debug(f"Requesting signed URL for {template_name} from Supabase.")
 
-    # 有効期限付きのサイン付きURLを取得（10分間有効）
-    signed_url = generate_supabase_excel_url(file_name)
+    # 拡張子を確実に付ける
+    template_file_name = ensure_extension(template_name, ".xlsx")
 
-    # サイン付きURLを使ってExcelファイルをダウンロード
-    return download_excel_from_url(signed_url)
+    # 'excel_templates' バケットからサイン付きURLを生成
+    signed_url = generate_supabase_url(template_file_name, bucket_name="excel_templates")
 
+    # サイン付きURLを使ってテンプレートをダウンロード
+    return download_file_from_url(signed_url)
 
-def edit_excel_template(template: io.BytesIO, template_name: str, data: dict) -> io.BytesIO:
+def edit_excel_template(template_data: io.BytesIO, template_name: str, data: dict) -> io.BytesIO:
     """
-    汎用的なExcelテンプレート編集関数。
-    テンプレート名に基づいてセルのマッピングを取得し、受け取ったデータを編集。
+    Excelテンプレートを編集し、データを埋め込む関数。
     """
-    wb = load_workbook(template)
+    wb = load_workbook(template_data)
     ws = wb.active
 
     # テンプレートに基づいたセルマッピングを取得
@@ -40,65 +47,35 @@ def edit_excel_template(template: io.BytesIO, template_name: str, data: dict) ->
         if field in data:
             ws[cell_address] = data[field]
 
-    # 編集後のエクセルファイルをバイトストリームに保存
+    # 編集後のExcelファイルをバイトストリームに保存
     edited_excel = io.BytesIO()
     wb.save(edited_excel)
     edited_excel.seek(0)
 
     return edited_excel
 
-
-if __name__ == "__main__":
-    # ロギングの設定
-    logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s")
-
-    logging.debug("Starting the script.")
+def process_excel_template(template_name: str, input_data: dict) -> dict:
+    """
+    Excelテンプレートを処理し、編集後のファイルのダウンロードリンクを生成する関数。
+    """
     try:
-        # get_excel_templateのテスト実行
-        logging.debug("Running get_excel_template to test the function.")
-        template_data = get_excel_template()
-        logging.info("Template successfully loaded and tested.")
-    except HTTPException as e:
-        logging.error(f"HTTPException occurred: {e.detail}")
+        # テンプレートを取得
+        template = get_excel_template(template_name)
+
+        # テンプレートを編集
+        edited_excel = edit_excel_template(template, template_name, input_data)
+
+        # 一意のファイル名を生成
+        timestamp_str = datetime.now().strftime("%Y%m%d%H%M%S")
+        excel_file_name = f"{template_name}_{timestamp_str}.xlsx"
+
+        # 'edited-zumen' バケットにファイルをアップロード
+        upload_file_to_supabase(excel_file_name, edited_excel, bucket_name="edited-zumen")
+
+        # ダウンロードリンクを生成
+        excel_download_url = generate_download_link(excel_file_name, bucket_name="edited-zumen")
+
+        return {"excel_download_url": excel_download_url}
     except Exception as e:
-        logging.error(f"An unexpected error occurred: {str(e)}")
-
-    logging.debug("Starting the script.")
-    try:
-        # get_excel_templateのテスト実行
-        logging.debug("Running get_excel_template to test the function.")
-        template_data = get_excel_template()
-        logging.info("Template successfully loaded and tested.")
-
-        # edit_excel_templateのテスト実行
-        logging.debug("Running edit_excel_template to test the function.")
-        test_data = {
-            "architect_number": "12345",
-            "architect_name": "John Doe",
-            "office_number": "67890",
-            "address": "123 Main St",
-            "phone_number": "555-1234",
-            "client_name": "Client Name",
-            "building_location": "Location",
-            "building_name": "Building",
-            "building_usage": "Commercial",
-            "building_area": 5000.0,
-            "total_area": 15000.0,
-            "max_height": 50.0,
-            "eaves_height": 45.0,
-            "above_ground_floors": 5,
-            "underground_floors": 1,
-            "structure_type": "Steel",
-        }
-        edited_excel = edit_excel_template(template_data, **test_data)
-        logging.info("Excel template successfully edited and tested.")
-
-        # 編集後のエクセルファイルをローカルに保存して確認する（オプション）
-        with open("temp/edited_template.xlsx", "wb") as f:
-            f.write(edited_excel.getvalue())
-        logging.debug("Edited template saved as 'temp/edited_template.xlsx' for verification.")
-
-    except HTTPException as e:
-        logging.error(f"HTTPException occurred: {e.detail}")
-    except Exception as e:
-        logging.error(f"An unexpected error occurred: {str(e)}")
+        logging.error(f"Error processing Excel template: {str(e)}")
+        raise HTTPException(status_code=500, detail="An error occurred while processing the Excel template.")

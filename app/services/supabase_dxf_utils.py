@@ -1,10 +1,11 @@
 import io
 import logging
 import requests
+from config import config  # configからSupabaseの設定をインポート
 from datetime import timedelta
 from fastapi import HTTPException
 from supabase import create_client, Client
-from config import config  # configからSupabaseの設定をインポート
+from urllib.parse import urlencode
 
 # Supabaseクライアントの作成
 supabase: Client = create_client(config.SUPABASE_URL, config.SUPABASE_KEY)
@@ -27,7 +28,7 @@ def generate_supabase_dxf_url(file_name: str, expiration_minutes: int = 5) -> st
 
     # Supabaseのサイン付きURLを生成
     try:
-        response = supabase.storage.from_("dxf-template").create_signed_url(
+        response = supabase.storage.from_("dxf_template").create_signed_url(
             file_name, expiration_time
         )
         if hasattr(response, 'error') and response.error:
@@ -38,7 +39,13 @@ def generate_supabase_dxf_url(file_name: str, expiration_minutes: int = 5) -> st
         if not signed_url:
             logging.error(f"No signed URL returned for {file_name}")
             raise HTTPException(status_code=500, detail="No signed URL generated")
-        return signed_url
+        
+        # 'download' パラメータを追加してファイル名を指定
+        params = {'download': file_name}
+        query_string = urlencode(params)
+        signed_url_with_download = f"{signed_url}&{query_string}"
+
+        return signed_url_with_download
     except Exception as e:
         logging.error(f"Error generating signed URL: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to generate signed URL: {e}")
@@ -52,11 +59,9 @@ def upload_dxf_to_supabase(file_name: str, file_data: io.BytesIO) -> None:
     file_name = ensure_dxf_extension(file_name)
     logging.debug(f"Uploading {file_name} to Supabase storage")
 
-    # MIMEタイプを指定してアップロード
-    options = {"contentType": "application/dxf"}
-
+    # Content-Typeの指定を削除
     response = supabase.storage.from_("edited-dxf-files").upload(
-        file_name, file_data.getvalue(), options=options
+        file_name, file_data.getvalue()
     )
     logging.debug(f"Response from storage upload: {response}")
 
@@ -69,9 +74,6 @@ def upload_dxf_to_supabase(file_name: str, file_data: io.BytesIO) -> None:
 def generate_dxf_download_link(
     file_name: str, expiration_minutes: int = 10
 ) -> str:
-    """
-    Supabase上のファイルに対して有効期限付きのダウンロードリンクを生成する関数。
-    """
     file_name = ensure_dxf_extension(file_name)
     logging.debug(f"Generating download link for {file_name}")
     expiration_time = int((timedelta(minutes=expiration_minutes)).total_seconds())
@@ -82,7 +84,9 @@ def generate_dxf_download_link(
 
     if response is None or hasattr(response, "error") and response.error:
         logging.error(f"Failed to generate download link for {file_name}")
-        raise HTTPException(status_code=500, detail="Failed to generate download link")
+        raise HTTPException(
+            status_code=500, detail="Failed to generate download link"
+        )
 
     # レスポンスから signedURL を取得
     signed_url = response.get("signedURL")
@@ -90,19 +94,23 @@ def generate_dxf_download_link(
         logging.error(f"No signed URL returned for {file_name}")
         raise HTTPException(status_code=500, detail="No signed URL generated")
 
-    return signed_url
+    # 'download' パラメータを追加してファイル名を指定
+    params = {'download': file_name}
+    query_string = urlencode(params)
+    signed_url_with_download = f"{signed_url}&{query_string}"
+
+    return signed_url_with_download
 
 
-# 公開URLからファイルをダウンロードする関数
 def download_dxf_from_url(url: str) -> io.BytesIO:
     """
     URLからDXFファイルをダウンロードし、BytesIOとして返す関数。
     """
     logging.debug(f"Downloading DXF file from URL: {url}")
 
-    headers = {"Accept": "application/dxf"}
+    # headers = {"Accept": "application/dxf"}  # Content-Typeの指定を削除
 
-    response = requests.get(url, headers=headers)
+    response = requests.get(url)
 
     if response.status_code != 200:
         logging.error(f"Failed to download DXF file from URL: {url}")
@@ -110,15 +118,15 @@ def download_dxf_from_url(url: str) -> io.BytesIO:
             status_code=404, detail="File not found or failed to download"
         )
 
-    # コンテンツタイプを確認
-    content_type = response.headers.get("Content-Type", "")
-    if "application/dxf" not in content_type and "image/vnd.dxf" not in content_type:
-        logging.error(
-            f"Unexpected Content-Type: {content_type}. Expected 'application/dxf' or 'image/vnd.dxf'."
-        )
-        raise HTTPException(
-            status_code=500, detail="Unexpected content type when downloading file."
-        )
+    # コンテンツタイプの確認も削除
+    # content_type = response.headers.get("Content-Type", "")
+    # if "application/dxf" not in content_type and "image/vnd.dxf" not in content_type:
+    #     logging.error(
+    #         f"Unexpected Content-Type: {content_type}. Expected 'application/dxf' or 'image/vnd.dxf'."
+    #     )
+    #     raise HTTPException(
+    #         status_code=500, detail="Unexpected content type when downloading file."
+    #     )
 
     return io.BytesIO(response.content)
 
