@@ -13,6 +13,7 @@ from middleware import ErrorHandlingMiddleware, RateLimitMiddleware  # , CustomC
 # ルーティングモジュールをインポート
 from api.open_source import router as open_source_router
 from api.general import router as general_router
+from api.zumen import router as zumen_router
 from api.excel import router as excel_router
 from api.steel import router as steel_router
 from api.rc import router as rc_router
@@ -53,6 +54,7 @@ app.include_router(general_router, prefix="/general", tags=["General"])
 app.include_router(excel_router, prefix="/excel", tags=["Excel"])
 app.include_router(steel_router, prefix="/steel", tags=["Steel"])
 app.include_router(rc_router, prefix="/rc", tags=["RC"])
+app.include_router(rc_router, prefix="/zumen", tags=["Zumen"])
 
 # テスト用エンドポイントは本番環境では無効にする
 if config.ENVIRONMENT != "production":
