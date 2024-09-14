@@ -52,9 +52,9 @@ app.add_middleware(RateLimitMiddleware)
 app.include_router(open_source_router, prefix="/free", tags=["Free"])
 app.include_router(general_router, prefix="/general", tags=["General"])
 app.include_router(excel_router, prefix="/excel", tags=["Excel"])
+app.include_router(zumen_router, prefix="/zumen", tags=["Zumen"])
 app.include_router(steel_router, prefix="/steel", tags=["Steel"])
 app.include_router(rc_router, prefix="/rc", tags=["RC"])
-app.include_router(rc_router, prefix="/zumen", tags=["Zumen"])
 
 # テスト用エンドポイントは本番環境では無効にする
 if config.ENVIRONMENT != "production":

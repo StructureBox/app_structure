@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Body
 from services.excel import get_excel_template, edit_excel_template
 from models.excel_models import template_model_map, template_cell_map
-from services.supabase_utils import upload_to_supabase, generate_download_link, delete_from_supabase
+from services.supabase_excel_crud import upload_excel_to_supabase, generate_download_link, delete_excel_from_supabase
 from datetime import datetime
 from openpyxl import load_workbook
 
@@ -32,7 +32,7 @@ async def process_excel_test(template_name: str, input_data: dict = Body(...)):
     excel_file_name = f"{template_name}_{datetime.now().strftime('%Y%m%d%H%M%S')}.xlsx"
     try:
         # Supabaseにアップロード
-        upload_to_supabase(excel_file_name, edited_excel)
+        upload_excel_to_supabase(excel_file_name, edited_excel)
         upload_message = f"File {excel_file_name} uploaded to Supabase successfully."
 
         # ダウンロードリンクを生成
@@ -69,7 +69,7 @@ async def process_excel_test(template_name: str, input_data: dict = Body(...)):
                 error_cells[cell] = str(e)
 
         # ファイルを削除する処理（確認後にSupabase上のファイルを削除）
-        delete_message = delete_from_supabase(excel_file_name)
+        delete_message = delete_excel_from_supabase(excel_file_name)
 
         # 確認用のメッセージ
         return {

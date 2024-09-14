@@ -5,7 +5,7 @@ import logging
 
 from fastapi import HTTPException
 from openpyxl import load_workbook
-from services.supabase_utils import generate_supabase_file_url, download_excel_from_url
+from services.supabase_excel_crud import generate_supabase_excel_url, download_excel_from_url
 from models.excel_models import template_cell_map
 
 
@@ -16,7 +16,7 @@ def get_excel_template(file_name: str) -> io.BytesIO:
     logging.debug(f"Requesting signed URL for {file_name} from Supabase.")
 
     # 有効期限付きのサイン付きURLを取得（10分間有効）
-    signed_url = generate_supabase_file_url(file_name)
+    signed_url = generate_supabase_excel_url(file_name)
 
     # サイン付きURLを使ってExcelファイルをダウンロード
     return download_excel_from_url(signed_url)

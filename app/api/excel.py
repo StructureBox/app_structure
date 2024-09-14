@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Body
 from services.excel import get_excel_template, edit_excel_template
 from models.excel_models import template_model_map
-from services.supabase_utils import upload_to_supabase, generate_download_link
+from services.supabase_excel_crud import upload_excel_to_supabase, generate_download_link
 from datetime import datetime
 
 # ルーターの作成
@@ -41,7 +41,7 @@ async def process_excel(
 
     # ファイル名に現在の日時を付加してSupabaseにアップロード
     excel_file_name = f"{template_name}_{datetime.now().strftime('%Y%m%d%H%M%S')}.xlsx"
-    upload_to_supabase(excel_file_name, edited_excel)
+    upload_excel_to_supabase(excel_file_name, edited_excel)
 
     # アップロードされたファイルのダウンロードリンクを生成
     excel_download_url = generate_download_link(excel_file_name)

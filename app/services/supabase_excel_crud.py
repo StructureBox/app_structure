@@ -19,7 +19,7 @@ def ensure_xlsx_extension(file_name: str) -> str:
     return file_name
 
 
-def generate_supabase_file_url(file_name: str, expiration_minutes: int = 5) -> str:
+def generate_supabase_excel_url(file_name: str, expiration_minutes: int = 5) -> str:
     """
     Supabaseのファイルに対して有効期限付きのサインURLを生成し、セキュリティを強化したダウンロードURLを生成する関数
     """
@@ -47,7 +47,7 @@ def generate_supabase_file_url(file_name: str, expiration_minutes: int = 5) -> s
     return signed_url
 
 
-def upload_to_supabase(file_name: str, file_data: io.BytesIO) -> None:
+def upload_excel_to_supabase(file_name: str, file_data: io.BytesIO) -> None:
     """
     Supabaseにファイルをアップロードする関数。
     """
@@ -84,26 +84,6 @@ def generate_download_link(file_name: str, expiration_minutes: int = 10) -> str:
     return signed_url
 
 
-def download_from_supabase(file_name: str) -> io.BytesIO:
-    """
-    Supabaseからファイルをダウンロードする関数。
-    """
-    file_name = ensure_xlsx_extension(file_name)
-    logging.debug(f"Downloading {file_name} from Supabase storage")
-    try:
-        response = supabase.storage.from_("excel_templates").download(file_name)
-    except Exception as e:
-        logging.error(f"Error downloading file: {e}")
-        raise HTTPException(status_code=500, detail="Error downloading file")
-
-    if response is None or hasattr(response, "error") and response.error:
-        logging.error(f"Failed to download {file_name} from Supabase storage")
-        raise HTTPException(status_code=404, detail="File not found or failed to download")
-
-    # 返ってくるresponseはバイト型のため、直接BytesIOに渡す
-    return io.BytesIO(response)
-
-
 # 公開URLからファイルをダウンロードする関数
 def download_excel_from_url(url: str) -> io.BytesIO:
     """
@@ -119,7 +99,7 @@ def download_excel_from_url(url: str) -> io.BytesIO:
     return io.BytesIO(response.content)
 
 
-def delete_from_supabase(file_name: str) -> str:
+def delete_excel_from_supabase(file_name: str) -> str:
     """
     Supabase上のファイルを削除する関数。
     """
@@ -146,7 +126,7 @@ if __name__ == "__main__":
 
         # 1. ファイルのURLを生成
         file_name = "safety_certificate"  # 拡張子を省略しても自動で追加される
-        file_url = generate_supabase_file_url(file_name)
+        file_url = generate_supabase_excel_url(file_name)
         logging.info(f"File URL generated: {file_url}")
 
         # 2. URLからファイルをダウンロード
@@ -162,13 +142,13 @@ if __name__ == "__main__":
         # 4. テストのためにファイルをアップロード
         logging.debug(f"Uploading file {file_name} to Supabase for deletion test.")
         test_file_data = io.BytesIO(downloaded_file.getvalue())  # ダウンロードしたファイルを再アップロード
-        upload_to_supabase(file_name, test_file_data)
+        upload_excel_to_supabase(file_name, test_file_data)
 
         logging.info(f"File {file_name} uploaded to Supabase successfully.")
 
         # 5. アップロードされたファイルを削除
         logging.debug(f"Deleting file {file_name} from Supabase.")
-        delete_message = delete_from_supabase(file_name)
+        delete_message = delete_excel_from_supabase(file_name)
         logging.info(delete_message)
 
     except HTTPException as e:
