@@ -16,7 +16,7 @@ class Config:
     SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 
     # アプリの基本設定
-    APP_TITLE = "StructureBox API"
+    APP_TITLE = "StructureBox Free API"
     APP_VERSION = "1.0.0"
     OPENAPI_URL = "/openapi.json"
     DOCS_URL = "/docs"
